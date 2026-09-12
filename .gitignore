@@ -1,0 +1,23 @@
+# Local reference source
+/marss-riscv/
+
+# Build artifacts and generated traces
+/build/
+/build-*/
+/out/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local editor and agent settings
+/.vscode/
+/.idea/
+/.agents/
+/.codex/
+
+# Temporary files
+*.swp
+*.swo
+*~
+.DS_Store
