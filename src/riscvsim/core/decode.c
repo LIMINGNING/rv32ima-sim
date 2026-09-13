@@ -18,21 +18,24 @@ void in_core_decode(INCore *core)
 {
     if (!core->decode.has_data)
         return;
-    CPUStage out = core->decode;
+    CPUStage out = core->decode; /* 可能存在数据冒险 */
     InsnLatch *l = &out.latch;
     uint32_t i = l->insn;
     /* 提取 opcode[6:0]、funct3[14:12] 和 funct7[31:25]。 */
     unsigned op = i & OPCODE_MASK, f3 = (i >> 12) & 7, f7 = i >> 25;
     int use1 = 0, use2 = 0, legal = 1;
-    l->rd = (i >> 7) & 31; /* insn[11:7]：5 位寄存器编号。 */
+    l->rd = (i >> 7) & 31;   /* insn[11:7]：5 位寄存器编号。 */
     l->rs1 = (i >> 15) & 31; /* insn[19:15]：5 位寄存器编号。 */
     l->rs2 = (i >> 20) & 31; /* insn[24:20]：5 位寄存器编号。 */
-    if (l->exception) {
+    if (l->exception)
+    {
         core->next_execute = out;
         return;
     }
-    switch (op) {
-    case OPCODE_LUI: case OPCODE_AUIPC: /* LUI, AUIPC */
+    switch (op)
+    {
+    case OPCODE_LUI:
+    case OPCODE_AUIPC: /* LUI, AUIPC */
         l->writes_rd = 1;
         l->imm = i & 0xfffff000u; /* U 型：保留高 20 位，低 12 位为 0。 */
         break;
@@ -40,7 +43,8 @@ void in_core_decode(INCore *core)
         l->writes_rd = 1;
         /* J 型：拼接 imm[20|19:12|11|10:1]，最低位补 0，再符号扩展。 */
         l->imm = sext(((i >> 31) << 20) | (((i >> 12) & 255) << 12) |
-                      (((i >> 20) & 1) << 11) | (((i >> 21) & 1023) << 1), 21);
+                          (((i >> 20) & 1) << 11) | (((i >> 21) & 1023) << 1),
+                      21);
         break;
     case OPCODE_JALR: /* JALR */
         use1 = l->writes_rd = 1;
@@ -51,7 +55,8 @@ void in_core_decode(INCore *core)
         use1 = use2 = 1;
         /* B 型：拼接 imm[12|11|10:5|4:1]，最低位补 0，再符号扩展。 */
         l->imm = sext(((i >> 31) << 12) | (((i >> 7) & 1) << 11) |
-                      (((i >> 25) & 63) << 5) | (((i >> 8) & 15) << 1), 13);
+                          (((i >> 25) & 63) << 5) | (((i >> 8) & 15) << 1),
+                      13);
         legal = f3 != 2 && f3 != 3;
         break;
     case OPCODE_LOAD: /* loads */
@@ -69,33 +74,41 @@ void in_core_decode(INCore *core)
         use1 = l->writes_rd = 1;
         l->imm = sext(i >> 20, 12); /* I 型：insn[31:20] 按 12 位符号扩展。 */
         /* 移位立即数指令还需检查高位：SLLI/SRLI 为 0000000，SRAI 为 0100000。 */
-        if (f3 == 1) legal = f7 == 0;
-        if (f3 == 5) legal = f7 == 0 || f7 == 0x20;
+        if (f3 == 1)
+            legal = f7 == 0;
+        if (f3 == 5)
+            legal = f7 == 0 || f7 == 0x20;
         break;
     case OPCODE_OP: /* register ALU */
         use1 = use2 = l->writes_rd = 1;
-        /* 寄存器运算中，仅 SUB/SRA 允许 funct7=0100000。 */
-        legal = f7 == 0 || (f7 == 0x20 && (f3 == 0 || f3 == 5));
+        /* funct7=0000001 为 M 扩展；仅 SUB/SRA 允许 0100000。 */
+        legal = f7 == 0 || f7 == 1 || (f7 == 0x20 && (f3 == 0 || f3 == 5));
         break;
     case OPCODE_MISC_MEM: /* FENCE：单核同步 RAM 不需要额外动作。 */
         legal = f3 == 0;
         break;
     case OPCODE_SYSTEM:
-        if (i == 0x00000073u) l->exception = 12; /* M-mode ECALL, cause 11 */
-        else if (i == 0x00100073u) l->exception = 4; /* breakpoint */
-        else legal = 0;
+        if (i == 0x00000073u)
+            l->exception = 12; /* M-mode ECALL, cause 11 */
+        else if (i == 0x00100073u)
+            l->exception = 4; /* breakpoint */
+        else
+            legal = 0;
         l->tval = i == 0x00100073u ? l->pc : 0;
         break;
-    default: legal = 0;
+    default:
+        legal = 0;
     }
-    if (!legal) {
+    if (!legal)
+    {
         l->exception = 3; /* illegal instruction, cause 2 */
         l->tval = i;
     }
     /* WB 在 ID 之前写寄存器，因此只等待 EX/MEM 中的生产者。 */
     if (!l->exception &&
         ((use1 && (pending(core->execute, l->rs1) || pending(core->memory, l->rs1))) ||
-         (use2 && (pending(core->execute, l->rs2) || pending(core->memory, l->rs2))))) {
+         (use2 && (pending(core->execute, l->rs2) || pending(core->memory, l->rs2)))))
+    {
         core->stalled = 1;
         core->stalls++;
         core->next_decode = core->decode; /* 保持 ID，向 EX 插入气泡 */
