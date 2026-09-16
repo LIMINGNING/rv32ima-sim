@@ -4,6 +4,7 @@ import argparse
 import html
 import sys
 from trace import STAGES, read_trace, output_path
+from disasm import disassemble
 
 
 def render(events):
@@ -15,18 +16,23 @@ def render(events):
         cells = [f'<th>{cycle}</th>']
         for stage in STAGES:
             e = stages.get(stage)
-            cells.append(f'<td class="{stage}">0x{e["pc"]:08x}<br><small>0x{e["insn"]:08x}</small></td>' if e else '<td>—</td>')
+            if e:
+                assembly = html.escape(disassemble(e['insn'], e['pc']))
+                cells.append(f'<td class="{stage}"><strong>{assembly}</strong><br>'
+                             f'<small>PC: 0x{e["pc"]:08x}<br>机器码: 0x{e["insn"]:08x}</small></td>')
+            else:
+                cells.append('<td>—</td>')
         rows.append('<tr>' + ''.join(cells) + '</tr>')
     return '''<!doctype html><html lang="zh-CN"><meta charset="utf-8">
-<title>RV32I 流水轨迹</title><style>
+<title>RV32IMA 流水轨迹</title><style>
 body{font:16px system-ui;margin:32px;color:#172337;background:#f5f7fb}
 table{border-collapse:collapse;width:100%;font-family:monospace;background:white}
 th,td{padding:10px;border:1px solid #d5dce5;text-align:center}thead{position:sticky;top:0;background:#172337;color:white}
 small{color:#556}input{padding:8px;width:280px}.IF{background:#e6f3ff}.ID{background:#eaf6e9}.EX{background:#fff2d8}.MEM{background:#f3eaff}.WB{background:#ffe9e5}
-</style><h1>RV32I 五级流水轨迹</h1>
-<p>每格上行为 PC，下行为机器码。— 表示没有日志事件，可能是气泡或该阶段未执行。
+</style><h1>RV32IMA 五级流水轨迹</h1>
+<p>每格显示汇编指令，下方保留 PC 和机器码。寄存器使用 x0–x31；分支和 JAL 显示目标地址。无法解码的指令显示为 .word。— 表示没有日志事件，可能是气泡或该阶段未执行。
 重复 PC 可能是停顿或循环；WB 事件也可能是异常指令，不能直接当作退休数。</p>
-<p>显示 ''' + str(len(events)) + ''' 个阶段事件。<input id="filter" placeholder="筛选 PC / 机器码，例如 80000000"></p>
+<p>显示 ''' + str(len(events)) + ''' 个阶段事件。<input id="filter" placeholder="筛选汇编 / PC / 机器码，例如 amoadd"></p>
 <table><thead><tr><th>周期</th>''' + ''.join(f'<th>{html.escape(s)}</th>' for s in STAGES) + '''</tr></thead><tbody>''' + ''.join(rows) + '''</tbody></table>
 <script>document.getElementById('filter').addEventListener('input',function(){
 const q=this.value.toLowerCase();document.querySelectorAll('tbody tr').forEach(r=>r.hidden=!r.textContent.toLowerCase().includes(q));});</script></html>'''

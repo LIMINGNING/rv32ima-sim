@@ -21,7 +21,7 @@ static int64_t signed_value(uint32_t value)
     return (int64_t)value - ((value & 0x80000000u) ? INT64_C(0x100000000) : 0);
 }
 
-/* M 指令暂按单拍 EX 建模。64 位中间值保证乘积和 INT_MIN/-1 不溢出。 */
+/* 功能计算与时序分离。64 位中间值保证乘积和 INT_MIN/-1 不溢出。 */
 static uint32_t execute_m(unsigned f3, uint32_t a, uint32_t b)
 {
     int64_t sa = signed_value(a), sb = signed_value(b);
@@ -72,6 +72,9 @@ void in_core_execute(INCore *core)
     case OPCODE_STORE:
         l->result = a + l->imm;
         break;
+    case OPCODE_AMO:
+        l->mem_addr = a; /* A 指令没有地址偏移立即数。 */
+        break;
     case OPCODE_JAL:
     case OPCODE_JALR:
         l->result = l->pc + 4;
@@ -107,7 +110,25 @@ void in_core_execute(INCore *core)
     case OPCODE_OP:
         if (op == OPCODE_OP && (l->insn >> 25) == 1)
         {
-            l->result = execute_m(f3, a, b);
+            /* MARSS 风格的功能单元延迟模型：计算一次，结果就绪后才放行。
+             * 当前选择非流水化、单个 EX 槽；MEM 反压时整个 EX 时钟使能关闭。
+             */
+            if (!l->m_result_ready)
+            {
+                l->result = execute_m(f3, a, b);
+                l->ex_cycles_left = f3 < 4 ? core->mul_cycles : core->div_cycles;
+                l->m_result_ready = 1;
+            }
+            if (l->ex_cycles_left > 1)
+            {
+                --l->ex_cycles_left;
+                core->next_execute = core->next_memory;
+                core->next_memory = (CPUStage){0};
+                core->execute_stalled = 1;
+                core->execute_stalls++;
+                return;
+            }
+            l->ex_cycles_left = 0;
             break;
         }
         if (op == OPCODE_OP_IMM)

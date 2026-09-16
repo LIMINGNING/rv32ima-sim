@@ -84,6 +84,31 @@ void in_core_decode(INCore *core)
         /* funct7=0000001 为 M 扩展；仅 SUB/SRA 允许 0100000。 */
         legal = f7 == 0 || f7 == 1 || (f7 == 0x20 && (f3 == 0 || f3 == 5));
         break;
+    case OPCODE_AMO:
+        use1 = use2 = l->writes_rd = 1;
+        /* funct5 不包含 aq/rl；只实现 RV32A 的 .W 编码。 */
+        switch (i >> 27)
+        {
+        case 0x02: /* LR.W 不读取 rs2，其编码必须为零。 */
+            use2 = 0;
+            legal = f3 == 2 && l->rs2 == 0;
+            break;
+        case 0x03: /* SC.W 的 rd 是成功/失败状态。 */
+        case 0x00:
+        case 0x01:
+        case 0x04:
+        case 0x08:
+        case 0x0c:
+        case 0x10:
+        case 0x14:
+        case 0x18:
+        case 0x1c:
+            legal = f3 == 2;
+            break;
+        default:
+            legal = 0;
+        }
+        break;
     case OPCODE_MISC_MEM: /* FENCE：单核同步 RAM 不需要额外动作。 */
         legal = f3 == 0;
         break;
@@ -114,7 +139,7 @@ void in_core_decode(INCore *core)
         core->next_decode = core->decode; /* 保持 ID，向 EX 插入气泡 */
         return;
     }
-    l->rs1_value = l->rs1 ? core->simcpu->regs[l->rs1] : 0;
+    l->rs1_value = l->rs1 ? core->simcpu->regs[l->rs1] : 0; /* reg0单独处理 */
     l->rs2_value = l->rs2 ? core->simcpu->regs[l->rs2] : 0;
     core->next_execute = out;
 }

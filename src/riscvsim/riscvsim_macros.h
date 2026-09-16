@@ -12,6 +12,7 @@
 #define OPCODE_BRANCH   0x63u /* 0b1100011 */
 #define OPCODE_LOAD     0x03u /* 0b0000011 */
 #define OPCODE_STORE    0x23u /* 0b0100011 */
+#define OPCODE_AMO      0x2fu /* 0b0101111 */
 #define OPCODE_OP_IMM   0x13u /* 0b0010011 */
 #define OPCODE_OP       0x33u /* 0b0110011 */
 #define OPCODE_MISC_MEM 0x0fu /* 0b0001111 */

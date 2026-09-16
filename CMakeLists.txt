@@ -8,6 +8,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(sim
     src/riscvsim/riscvsim_cpu.c
     src/riscvsim/core/core.c
+    src/riscvsim/core/fetch.c
+    src/riscvsim/core/memory.c
+    src/riscvsim/core/commit.c
+    src/riscvsim/core/atomic.c
     src/riscvsim/core/decode.c
     src/riscvsim/core/execute.c
     src/riscvsim/utils/trace.c
@@ -28,6 +32,10 @@ if(BUILD_TESTING)
     add_executable(rv32i_test
         tests/rv32i_test.c
         src/riscvsim/core/core.c
+        src/riscvsim/core/fetch.c
+        src/riscvsim/core/memory.c
+        src/riscvsim/core/commit.c
+        src/riscvsim/core/atomic.c
         src/riscvsim/core/decode.c
         src/riscvsim/core/execute.c
         src/riscvsim/utils/trace.c
@@ -39,6 +47,25 @@ if(BUILD_TESTING)
         target_compile_options(rv32i_test PRIVATE -Wall -Wextra -Werror)
     endif()
     add_test(NAME rv32i COMMAND rv32i_test)
+
+    add_executable(rv32a_test
+        tests/rv32a_test.c
+        src/riscvsim/core/core.c
+        src/riscvsim/core/fetch.c
+        src/riscvsim/core/memory.c
+        src/riscvsim/core/commit.c
+        src/riscvsim/core/atomic.c
+        src/riscvsim/core/decode.c
+        src/riscvsim/core/execute.c
+        src/riscvsim/utils/trace.c)
+    target_include_directories(rv32a_test PRIVATE src/riscvsim)
+    set_target_properties(rv32a_test PROPERTIES
+        C_STANDARD 11 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(rv32a_test PRIVATE -Wall -Wextra -Werror)
+    endif()
+    add_test(NAME rv32a COMMAND rv32a_test)
+    add_test(NAME atomic_demo COMMAND sim)
 endif()
 
 if(BUILD_TESTING)

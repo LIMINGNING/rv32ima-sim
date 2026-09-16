@@ -11,7 +11,9 @@ python3 tools/trace.py out/trace.log -o out/trace.jsonl
 python3 tools/view_trace.py out/trace.log -o out/trace.html
 ```
 
-用浏览器打开 `out/trace.html`，或使用 VS Code 的 HTML 预览。页面按周期、阶段排列，支持文本筛选 PC/机器码。
+用浏览器打开 `out/trace.html`，或使用 VS Code 的 HTML 预览。页面按周期、阶段排列，优先显示 RV32IMA 汇编，下方保留 PC 和机器码，支持按汇编、PC 或机器码筛选。
+寄存器使用 `x0`～`x31`，立即数按指令格式显示；分支和 JAL 显示目标地址，A 指令保留 `.aq`/`.rl` 后缀。未知或未支持的编码显示 `.word 0x...`，不会猜测成其他指令。使用标准指令名，例如 NOP 编码显示为 `addi x0, x0, 0`。
+反汇编仅用于展示，不改变原始日志、CSV/JSONL 格式或轨迹比较行为；更新工具后需重新生成已有 HTML。
 大日志可以使用 `--start 100 --end 200` 限制展示周期。页面只显示有事件的周期，空单元格表示无日志事件，不能单凭它区分气泡、冲刷与暂停。
 
 ## 比较轨迹
