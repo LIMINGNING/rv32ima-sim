@@ -12,6 +12,10 @@ typedef struct RISCVSIMCPUState
     int reservation_valid;
     int trapped;
     uint32_t trap_cause, trap_pc, trap_value;
+    /* M1：CSR 文件、当前特权级与退休计数。 */
+    uint32_t csr[4096];
+    uint32_t priv;
+    uint64_t instret;
 } RISCVSIMCPUState;
 
 #endif

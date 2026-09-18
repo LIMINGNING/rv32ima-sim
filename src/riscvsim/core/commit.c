@@ -1,4 +1,5 @@
 #include "core.h"
+#include "csr.h"
 #include "../riscvsim_cpu.h"
 #include "../utils/trace.h"
 
@@ -51,10 +52,28 @@ int in_core_commit(INCore *core)
             in_core_invalidate_reservation(core, (uint32_t)address, width);
         }
     }
+    /* CSR 读改写延迟到 WB：与 store 一致，保证异常精确。 */
+    if (op == OPCODE_SYSTEM)
+    {
+        unsigned f3 = (l->insn >> 12) & 7;
+        if (f3 != 0)
+        {
+            uint32_t src = f3 > 3 ? l->rs1 : l->rs1_value; /* 立即数形式取 zimm */
+            uint32_t old_value = 0;
+            if (csr_access(core->simcpu, l->csr_addr, f3, l->rs1, src, &old_value))
+            {
+                l->exception = 3; /* illegal instruction, cause 2 */
+                l->tval = l->insn;
+                return report_trap(core, l);
+            }
+            l->result = old_value; /* rd 写回 CSR 旧值 */
+        }
+    }
     if (l->writes_rd && l->rd)
         core->simcpu->regs[l->rd] = l->result;
     core->simcpu->regs[0] = 0;
     core->retired++;
+    core->simcpu->instret++;
     trace_commit(core, 0);
     if (core->stop_pc_valid && l->pc == core->stop_pc) {
         core->halted = 1;

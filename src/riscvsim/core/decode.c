@@ -113,13 +113,24 @@ void in_core_decode(INCore *core)
         legal = f3 == 0;
         break;
     case OPCODE_SYSTEM:
-        if (i == 0x00000073u)
-            l->exception = 12; /* M-mode ECALL, cause 11 */
-        else if (i == 0x00100073u)
-            l->exception = 4; /* breakpoint */
+        if (f3 == 0)
+        {
+            if (i == 0x00000073u)
+                l->exception = 12; /* M-mode ECALL, cause 11 */
+            else if (i == 0x00100073u)
+                l->exception = 4; /* breakpoint */
+            else
+                legal = 0; /* MRET/SRET/WFI 留待 M2 实现 */
+            l->tval = i == 0x00100073u ? l->pc : 0;
+        }
+        else if (f3 != 4) /* funct3 1/2/3 寄存器形式，5/6/7 立即数形式 */
+        {
+            l->csr_addr = i >> 20; /* CSR 编号 insn[31:20] */
+            l->writes_rd = 1;      /* CSR 指令把旧值写回 rd */
+            use1 = f3 <= 3;        /* 立即数形式用 insn[19:15] 作为 zimm */
+        }
         else
-            legal = 0;
-        l->tval = i == 0x00100073u ? l->pc : 0;
+            legal = 0; /* funct3=4 未定义 */
         break;
     default:
         legal = 0;
