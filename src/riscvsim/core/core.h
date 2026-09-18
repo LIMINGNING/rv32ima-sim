@@ -5,6 +5,16 @@
 #include "../riscvsim_macros.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
+
+/* Physical bus: probe MUST NOT cause device side effects. Return 0 on success.
+ * access: 0=read, 1=write, 2=instruction fetch. No virtual translation yet. */
+typedef struct SimBus {
+    void *opaque;
+    int (*probe)(void *, uint32_t, unsigned, int);
+    int (*read)(void *, uint32_t, unsigned, uint32_t *);
+    int (*write)(void *, uint32_t, unsigned, uint32_t);
+} SimBus;
 
 typedef struct INCore
 {
@@ -35,6 +45,11 @@ typedef struct INCore
     /* 从地址 0 开始的小端数据 RAM；访存地址直接作为数组下标。 */
     uint8_t *data;
     size_t data_size;
+
+    SimBus bus; /* Optional mapped memory; legacy array mode remains supported. */
+    FILE *commit_trace;
+    uint32_t stop_pc;
+    int stop_pc_valid;
 
     struct RISCVSIMCPUState *simcpu; // 回指父对象
 } INCore;
