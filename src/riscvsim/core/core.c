@@ -1,4 +1,5 @@
 #include "core.h"
+#include "csr.h"
 #include "../riscvsim_cpu.h"
 #include "../utils/trace.h"
 #include <string.h>
@@ -9,6 +10,7 @@ void in_core_init(INCore *core, RISCVSIMCPUState *cpu,
 {
     memset(core, 0, sizeof(*core));
     memset(cpu, 0, sizeof(*cpu));
+    cpu->priv = PRIV_M; /* 复位后运行在 M 模式 */
     core->simcpu = cpu;
     core->program = program;
     core->program_size = count;

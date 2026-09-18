@@ -32,6 +32,7 @@ add_executable(sim
     src/riscvsim/core/atomic.c
     src/riscvsim/core/decode.c
     src/riscvsim/core/execute.c
+    src/riscvsim/core/csr.c
     src/riscvsim/utils/trace.c
 )
 target_link_libraries(sim PRIVATE sim_memory)
@@ -57,6 +58,7 @@ if(BUILD_TESTING)
         src/riscvsim/core/atomic.c
         src/riscvsim/core/decode.c
         src/riscvsim/core/execute.c
+        src/riscvsim/core/csr.c
         src/riscvsim/utils/trace.c
     )
     target_include_directories(rv32i_test PRIVATE src/riscvsim)
@@ -76,6 +78,7 @@ if(BUILD_TESTING)
         src/riscvsim/core/atomic.c
         src/riscvsim/core/decode.c
         src/riscvsim/core/execute.c
+        src/riscvsim/core/csr.c
         src/riscvsim/utils/trace.c)
     target_include_directories(rv32a_test PRIVATE src/riscvsim)
     set_target_properties(rv32a_test PROPERTIES
@@ -85,6 +88,18 @@ if(BUILD_TESTING)
     endif()
     add_test(NAME rv32a COMMAND rv32a_test)
     add_test(NAME atomic_demo COMMAND sim)
+
+    add_executable(csr_test
+        tests/csr_test.c
+        src/riscvsim/core/csr.c
+    )
+    target_include_directories(csr_test PRIVATE src/riscvsim)
+    set_target_properties(csr_test PROPERTIES
+        C_STANDARD 11 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(csr_test PRIVATE -Wall -Wextra -Werror)
+    endif()
+    add_test(NAME csr COMMAND csr_test)
 endif()
 
 if(BUILD_TESTING)
@@ -97,5 +112,8 @@ if(BUILD_TESTING)
                     $<TARGET_FILE:sim> $<BOOL:${MARSS_SOURCE_DIR}>)
         add_test(NAME spike_trace_tools
             COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/spike_tools_test.py)
+        add_test(NAME csr_trace
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/csr_trace_test.py
+                    $<TARGET_FILE:sim>)
     endif()
 endif()

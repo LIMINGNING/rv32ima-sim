@@ -31,6 +31,7 @@ typedef struct InsnLatch
     int writes_rd;     /* ID：确定指令是否写 rd；WB 根据此标志写回，忽略 x0。 */
     int exception;     /* IF/ID/EX/MEM：检测异常时设置 cause + 1，0 表示无异常；WB 报告。 */
     uint32_t tval;     /* IF/ID/EX/MEM：随异常记录故障地址或非法机器码等；WB 保存，无附加信息时为 0。 */
+    uint32_t csr_addr; /* ID：CSR 指令的 CSR 编号（insn[31:20]）；非 CSR 指令为 0。 */
 } InsnLatch;
 
 /* 一个流水阶段的状态：记录是否有有效指令，并保存该指令的数据。 */
