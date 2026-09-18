@@ -20,10 +20,13 @@ void in_core_memory(INCore *core)
         return;
     unsigned width = 1u << (f3 & 3); /* 低两位决定字节数：1、2、4；load 的 bit 2 区分无符号类型。 */
     uint32_t address = l->result;
+    l->mem_addr = address; /* 保留有效地址：load 之后 result 会承载读回值 */
     if (address & (width - 1)) /* 地址未对齐 */
         l->exception = op == OPCODE_LOAD ? 5 : 7;
-    else if (!core->data || (uint64_t)address + width > core->data_size ||
-             (uint64_t)address + width > UINT64_C(0x100000000)) /* 地址越界 */
+    else if (core->bus.probe
+             ? core->bus.probe(core->bus.opaque, address, width, op == OPCODE_STORE)
+             : (!core->data || (uint64_t)address + width > core->data_size ||
+                (uint64_t)address + width > UINT64_C(0x100000000))) /* 地址越界 */
         l->exception = op == OPCODE_LOAD ? 6 : 8;
     if (l->exception)
     {
@@ -32,6 +35,7 @@ void in_core_memory(INCore *core)
     }
     if (op == OPCODE_LOAD) /* load 在本阶段读取*/
     {
+        if (core->bus.read) return; /* 带副作用的总线读延迟到 WB */
         uint32_t value = 0;
         for (unsigned j = 0; j < width; ++j)
             value |= (uint32_t)core->data[address + j] << (j * 8);

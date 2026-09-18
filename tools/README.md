@@ -32,8 +32,23 @@ python3 tools/diff.py --actual out/actual.log --expected out/reference.log --mod
 首个差异会输出两侧事件及前后上下文（`--context 2`）。退出码：0 一致，1 不一致，2 输入或使用错误。
 相同轨迹只能证明所记录的字段一致，不能证明指令语义正确。
 
-**当前不是 Spike 架构状态差分。** 阶段日志没有寄存器写回值、内存写入值、异常结果等提交字段，WB 事件甚至可能是故障指令。
-因此不能把 WB 数量当作退休数，也不能据此计算可靠 CPI。后续需要新增提交日志和参考模型适配器。
+**`diff.py` 不是架构状态差分。** 阶段日志没有寄存器写回值、内存写入值、异常结果等提交字段，WB 事件甚至可能是故障指令。真正的架构状态差分见下方 `spike_compare.py`。
+因此不能把WB数量当作退休数，也不能据此计算可靠CPI。
+
+## 提交结果差分（Spike）
+
+`sim --bin FILE --trace-json FILE` 输出独立的提交/异常JSONL，包含寄存器与内存写回。
+它与上面的阶段日志是两种格式，不能传给原 `trace.py`、`view_trace.py` 或 `diff.py`。
+使用 Spike 作为参考模型做架构状态差分：
+
+```bash
+python3 tools/spike_compare.py
+```
+
+默认使用 `~/cpu/build/rv32ima-increment/sim` 与 `~/cpu/build/spike/spike`，可分别用
+`--sim`、`--spike` 覆盖。脚本编译同一测试程序、两边运行同一个 ELF，逐条比较
+33 条正常退休事件的 PC、指令、寄存器写回、load 地址与内存写，并在末尾做负向检查。
+详见 [Spike 差分说明](../docs/SPIKE.md)。
 
 ## 数据格式
 

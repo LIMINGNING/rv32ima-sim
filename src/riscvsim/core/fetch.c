@@ -30,7 +30,15 @@ void in_core_fetch(INCore *core)
     else
     {
         core->fetch_index = offset / 4;
-        l->insn = core->program[core->fetch_index++]; /* 取指 */
+        if (core->bus.read) {
+            if (core->bus.probe(core->bus.opaque, pc, 4, 2) ||
+                core->bus.read(core->bus.opaque, pc, 4, &l->insn)) {
+                l->exception = 2; l->tval = pc;
+            }
+        } else {
+            l->insn = core->program[core->fetch_index];
+        }
+        core->fetch_index++;
     }
     core->fetch_pc = pc + 4;
     trace_stage(core, "IF", core->fetch);
