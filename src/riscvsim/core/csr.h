@@ -56,8 +56,11 @@
 #define CSR_F3_RSI 6u
 #define CSR_F3_RCI 7u
 
-/* misa：MXL=1（32 位）| 扩展 I | 扩展 M。A 尚未实现，故不置位。 */
-#define MISA_VALUE ((UINT32_C(1) << 30) | (UINT32_C(1) << 8) | (UINT32_C(1) << 12))
+/* misa：MXL=1（32 位）| 扩展 A（bit 0）| 扩展 I（bit 8）| 扩展 M（bit 12）。
+ * 三个扩展都已实现（A 见 core/atomic.c），必须全部置位；漏掉 A 会让依赖 misa
+ * 判断扩展的软件误以为不支持原子指令。 */
+#define MISA_VALUE ((UINT32_C(1) << 30) | (UINT32_C(1) << 0) | \
+                    (UINT32_C(1) << 8) | (UINT32_C(1) << 12))
 
 /* 按地址位编码检查访问：addr[11:10] 读写权限（>=2 为只读），addr[9:8] 最低特权级。
  * 返回 0 表示允许，-1 表示非法。write 非 0 表示本次为写访问。 */

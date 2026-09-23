@@ -47,9 +47,10 @@ int main(void)
     CHECK(csr_access(&cpu, CSR_CYCLE, CSR_F3_RS, 1, 1, &v) == -1);
     CHECK(csr_access(&cpu, CSR_CYCLE, CSR_F3_RS, 0, 0, &v) == 0);
 
-    /* 6. 只读 ID 寄存器可读、写入非法。 */
+    /* 6. 只读 ID 寄存器可读、写入非法；misa 必须声明已实现的 A 扩展（bit 0）。 */
     reset(PRIV_M);
     CHECK(csr_read(&cpu, CSR_MISA, &v) == 0 && v == MISA_VALUE);
+    CHECK((v & 1u) != 0); /* 原子指令已实现，A 位就必须置位 */
     CHECK(csr_read(&cpu, CSR_MHARTID, &v) == 0 && v == 0);
     CHECK(csr_access(&cpu, CSR_MVENDORID, CSR_F3_RW, 1, 0, &v) == -1);
 
