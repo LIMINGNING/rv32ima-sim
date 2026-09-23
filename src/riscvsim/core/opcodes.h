@@ -18,4 +18,11 @@
 #define OPCODE_MISC_MEM 0x0fu /* 0b0001111 */
 #define OPCODE_SYSTEM   0x73u /* 0b1110011 */
 
+/* 特权指令：funct3 与 funct7 都是 0，无法靠字段区分，只能整条指令比较。 */
+#define INSN_ECALL 0x00000073u
+#define INSN_EBREAK 0x00100073u
+#define INSN_MRET 0x30200073u
+#define INSN_SRET 0x10200073u
+#define INSN_WFI 0x10500073u
+
 #endif

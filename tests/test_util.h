@@ -61,6 +61,13 @@ static inline uint32_t jal(unsigned rd, int offset)
            ((v >> 12) & 255) << 12 | rd << 7 | 0x6f;
 }
 
+/* CSR 类：funct3 选 CSRRW/CSRRS/CSRRC 及其立即数形式。立即数形式下 rs1 域就是
+ * 5 位 zimm，因此写操作数时直接传立即数本身；addr 是 12 位 CSR 编号。 */
+static inline uint32_t csr(unsigned f, unsigned rd, unsigned rs1, unsigned addr)
+{
+    return addr << 20 | rs1 << 15 | f << 12 | rd << 7 | 0x73;
+}
+
 /* 原子类（AMO）：f5 选操作，order 的 bit0 是 .aq、bit1 是 .rl。 */
 static inline uint32_t amo(unsigned f5, unsigned rd, unsigned rs1, unsigned rs2, unsigned order)
 {

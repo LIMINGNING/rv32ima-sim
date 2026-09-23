@@ -48,6 +48,21 @@
 #define COUNTER_TIME    2u
 #define COUNTER_INSTRET 4u
 
+/* mstatus 字段。当前只实现 M 模式陷阱需要的三位，写掩码之外的位置恒为 0；
+ * S 模式字段（SIE/SPIE/SPP）留到实现 sret 时再加进来。 */
+#define MSTATUS_MIE (UINT32_C(1) << 3)
+#define MSTATUS_MPIE (UINT32_C(1) << 7)
+#define MSTATUS_MPP_SHIFT 11u
+#define MSTATUS_MPP (UINT32_C(3) << MSTATUS_MPP_SHIFT)
+#define MSTATUS_MASK (MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPP)
+
+/* mtvec 的低两位是 MODE。只实现 Direct（0），写入时把 MODE 归零（WARL）：
+ * 向量化模式要求陷阱入口按 cause 偏移，等真正需要时再实现。 */
+#define MTVEC_MODE_MASK UINT32_C(3)
+
+/* mepc 的低两位恒为 0：IALIGN=32，指令地址一定 4 对齐。 */
+#define MEPC_MASK (~UINT32_C(3))
+
 /* CSR 指令的 funct3 编码。 */
 #define CSR_F3_RW  1u
 #define CSR_F3_RS  2u
