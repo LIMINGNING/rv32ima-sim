@@ -115,13 +115,14 @@ void in_core_decode(INCore *core)
     case OPCODE_SYSTEM:
         if (f3 == 0)
         {
-            if (i == 0x00000073u)
+            if (i == INSN_ECALL)
                 l->exception = 12; /* M-mode ECALL, cause 11 */
-            else if (i == 0x00100073u)
+            else if (i == INSN_EBREAK)
                 l->exception = 4; /* breakpoint */
-            else
-                legal = 0; /* MRET/SRET/WFI 留待 M2 实现 */
-            l->tval = i == 0x00100073u ? l->pc : 0;
+            else if (i != INSN_MRET)
+                legal = 0; /* SRET/WFI：S 模式陷阱与中断留待后续增量 */
+            /* MRET 放行：特权级检查与状态恢复都在 WB 生效，与 CSR 指令一致。 */
+            l->tval = i == INSN_EBREAK ? l->pc : 0;
         }
         else if (f3 != 4) /* funct3 1/2/3 寄存器形式，5/6/7 立即数形式 */
         {

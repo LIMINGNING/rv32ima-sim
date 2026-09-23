@@ -50,7 +50,7 @@ configure_sim_target(sim)
 include(CTest)
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    foreach(test rv32i rv32a csr)
+    foreach(test rv32i rv32a csr traps)
         add_executable(test_${test} tests/test_${test}.c)
         target_link_libraries(test_${test} PRIVATE rv32_core)
         configure_sim_target(test_${test})
@@ -79,7 +79,7 @@ if(BUILD_TESTING)
     configure_sim_target(test_cli)
 
     # 每个测试二进制自带断言与用例计数，CTest 只看退出码。
-    foreach(test rv32i rv32a csr memory commit loader)
+    foreach(test rv32i rv32a csr traps memory commit loader)
         add_test(NAME ${test} COMMAND test_${test})
     endforeach()
     add_test(NAME cli COMMAND test_cli $<TARGET_FILE:sim>
@@ -89,7 +89,7 @@ if(BUILD_TESTING)
     add_test(NAME tools_spike COMMAND ${Python3_EXECUTABLE}
                                      ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_spike_tools.py)
     # 起子进程的用例万一挂住，要在 60 秒内失败，而不是拖到 CTest 的默认超时。
-    set_tests_properties(rv32i rv32a csr memory commit loader cli tools_trace tools_spike
+    set_tests_properties(rv32i rv32a csr traps memory commit loader cli tools_trace tools_spike
         PROPERTIES TIMEOUT 60)
     # ENABLE_TRACE=OFF 时 test_commit 只打印跳过行，用 SKIP_RETURN_CODE 如实报成
     # 「跳过」，而不是一条什么都没断言的绿色通过。

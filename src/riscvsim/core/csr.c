@@ -78,6 +78,16 @@ void csr_store(struct RISCVSIMCPUState *cpu, uint32_t addr, uint32_t value)
         return;
     switch (addr)
     {
+    /* 已实现的 CSR 用写掩码把未实现的位置成 0（WARL），读回来就是实际支持的字段。 */
+    case CSR_MSTATUS:
+        cpu->csr[addr] = value & MSTATUS_MASK;
+        return;
+    case CSR_MTVEC:
+        cpu->csr[addr] = value & ~MTVEC_MODE_MASK;
+        return;
+    case CSR_MEPC:
+        cpu->csr[addr] = value & MEPC_MASK;
+        return;
     case CSR_MISA:
     case CSR_MVENDORID: case CSR_MARCHID: case CSR_MIMPID: case CSR_MHARTID:
     case CSR_CYCLE: case CSR_TIME: case CSR_INSTRET:
